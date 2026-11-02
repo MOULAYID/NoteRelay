@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import { liveQuery } from "dexie";
+import { useData } from "./use-data";
+import { AddToDocument, StudyDocuments } from "./study-documents";
 import { db, readPCM, removeAudio, removeSession } from "../storage/db";
 import {
   getSettings,
@@ -39,21 +40,6 @@ async function command(data: Record<string, unknown>) {
   if (result?.error) throw new Error(`NR:${result.error}`);
   return result;
 }
-function useData<T>(
-  query: () => Promise<T>,
-  dependencies: unknown[],
-  initial: T,
-) {
-  const [value, setValue] = useState<T>(initial);
-  useEffect(() => {
-    const subscription = liveQuery(query).subscribe({
-      next: setValue,
-      error: () => {},
-    });
-    return () => subscription.unsubscribe();
-  }, dependencies);
-  return value;
-}
 function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -72,12 +58,18 @@ function App() {
     [source, setSource] = useState<"tab" | "microphone">("tab"),
     [devices, setDevices] = useState<MediaDeviceInfo[]>([]),
     [device, setDevice] = useState("");
-  const [view, setView] = useState<"transcript" | "notes" | "library">(
-      "transcript",
+  const [view, setView] = useState<
+      "transcript" | "notes" | "library" | "documents"
+    >(
+      new URLSearchParams(location.search).get("view") === "documents"
+        ? "documents"
+        : "transcript",
     ),
     [selected, setSelected] = useState(""),
     [selectedTranscript, setSelectedTranscript] = useState(""),
     [selectedNotes, setSelectedNotes] = useState("");
+  const [documentId, setDocumentId] = useState<string>();
+  const [documentsDirty, setDocumentsDirty] = useState(false);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
@@ -656,153 +648,167 @@ function App() {
         <p className="muted">Keep the words. Find the moment.</p>
       </div>
       {alerts}
-      <section className="capture card">
-        <div className="source-toggle">
-          <button
-            className={source === "tab" ? "chosen" : ""}
-            disabled={engine.active || busy}
-            onClick={() => setSource("tab")}
-          >
-            ▣ Browser tab
-          </button>
-          <button
-            className={source === "microphone" ? "chosen" : ""}
-            disabled={engine.active || busy}
-            onClick={() => setSource("microphone")}
-          >
-            ♩ Microphone
-          </button>
-        </div>
-        {source === "microphone" && (
-          <>
-            <label>
-              Input device
-              <select
-                value={device}
-                disabled={engine.active}
-                onChange={(e) => setDevice(e.target.value)}
-              >
-                <option value="">Default microphone</option>
-                {devices
-                  .filter((d) => d.deviceId && d.deviceId !== "default")
-                  .map((d) => (
-                    <option key={d.deviceId} value={d.deviceId}>
-                      {d.label || "Microphone"}
-                    </option>
-                  ))}
-              </select>
-            </label>
+      {(view !== "documents" || engine.active) && (
+        <section className="capture card">
+          <div className="source-toggle">
             <button
-              className="text-button"
-              onClick={() =>
-                void perform(async () => {
-                  await command({ type: "OPEN", page: "microphone" });
-                })
-              }
+              className={source === "tab" ? "chosen" : ""}
+              disabled={engine.active || busy}
+              onClick={() => setSource("tab")}
             >
-              Grant microphone access ↗
+              ▣ Browser tab
             </button>
-            <p className="hint">
-              Record with your teacher’s permission. No microphone monitoring is
-              played through speakers.
-            </p>
-          </>
-        )}
-        <div className="record-row">
-          <span className={engine.active ? "record-dot live" : "record-dot"} />
-          <div>
-            <strong>
-              {engine.active
-                ? engine.paused
-                  ? "Paused"
-                  : "Recording"
-                : "Ready to record"}
-            </strong>
-            <span className="muted tiny">
-              {engine.active
-                ? (sessions.find((s) => s.id === engine.sessionId)?.title ??
-                  "Starting…")
-                : source === "tab"
-                  ? "Only the selected tab’s audio"
-                  : "Your selected microphone"}
+            <button
+              className={source === "microphone" ? "chosen" : ""}
+              disabled={engine.active || busy}
+              onClick={() => setSource("microphone")}
+            >
+              ♩ Microphone
+            </button>
+          </div>
+          {source === "microphone" && (
+            <>
+              <label>
+                Input device
+                <select
+                  value={device}
+                  disabled={engine.active}
+                  onChange={(e) => setDevice(e.target.value)}
+                >
+                  <option value="">Default microphone</option>
+                  {devices
+                    .filter((d) => d.deviceId && d.deviceId !== "default")
+                    .map((d) => (
+                      <option key={d.deviceId} value={d.deviceId}>
+                        {d.label || "Microphone"}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button
+                className="text-button"
+                onClick={() =>
+                  void perform(async () => {
+                    await command({ type: "OPEN", page: "microphone" });
+                  })
+                }
+              >
+                Grant microphone access ↗
+              </button>
+              <p className="hint">
+                Record with your teacher’s permission. No microphone monitoring
+                is played through speakers.
+              </p>
+            </>
+          )}
+          <div className="record-row">
+            <span
+              className={engine.active ? "record-dot live" : "record-dot"}
+            />
+            <div>
+              <strong>
+                {engine.active
+                  ? engine.paused
+                    ? "Paused"
+                    : "Recording"
+                  : "Ready to record"}
+              </strong>
+              <span className="muted tiny">
+                {engine.active
+                  ? (sessions.find((s) => s.id === engine.sessionId)?.title ??
+                    "Starting…")
+                  : source === "tab"
+                    ? "Only the selected tab’s audio"
+                    : "Your selected microphone"}
+              </span>
+            </div>
+            <span className="timer">
+              {stamp(
+                (sessions.find((s) => s.id === engine.sessionId)
+                  ?.totalSamples ?? 0) /
+                  (sessions.find((s) => s.id === engine.sessionId)
+                    ?.sampleRate ?? 16000),
+              )}
             </span>
           </div>
-          <span className="timer">
-            {stamp(
-              (sessions.find((s) => s.id === engine.sessionId)?.totalSamples ??
-                0) /
-                (sessions.find((s) => s.id === engine.sessionId)?.sampleRate ??
-                  16000),
-            )}
-          </span>
-        </div>
-        {engine.active ? (
-          <div className="button-row">
+          {engine.active ? (
+            <div className="button-row">
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() =>
+                  void perform(async () => {
+                    await command({
+                      type: "CONTROL",
+                      action: engine.paused ? "resume" : "pause",
+                    });
+                  })
+                }
+              >
+                {engine.paused ? "Resume" : "Pause"}
+              </button>
+              <button
+                className="stop"
+                disabled={busy}
+                onClick={() =>
+                  void perform(async () => {
+                    await command({ type: "CONTROL", action: "stop" });
+                  })
+                }
+              >
+                Stop & save
+              </button>
+            </div>
+          ) : (
             <button
-              className="secondary"
+              className="full"
               disabled={busy}
-              onClick={() =>
-                void perform(async () => {
-                  await command({
-                    type: "CONTROL",
-                    action: engine.paused ? "resume" : "pause",
-                  });
-                })
-              }
+              onClick={() => void perform(start)}
             >
-              {engine.paused ? "Resume" : "Pause"}
+              ● Start recording
             </button>
-            <button
-              className="stop"
-              disabled={busy}
-              onClick={() =>
-                void perform(async () => {
-                  await command({ type: "CONTROL", action: "stop" });
-                })
-              }
-            >
-              Stop & save
-            </button>
+          )}
+          {engine.active && (
+            <div className="level-row">
+              <span>Input</span>
+              <meter
+                min="0"
+                max="0.5"
+                value={engine.level ?? 0}
+                aria-label="Audio input level"
+              />
+            </div>
+          )}
+          <div className="local-status">
+            ✓{" "}
+            {session
+              ? `Saved locally through ${stamp(session.totalSamples / session.sampleRate)}`
+              : "Audio is saved locally before processing"}
           </div>
-        ) : (
-          <button
-            className="full"
-            disabled={busy}
-            onClick={() => void perform(start)}
-          >
-            ● Start recording
-          </button>
-        )}
-        {engine.active && (
-          <div className="level-row">
-            <span>Input</span>
-            <meter
-              min="0"
-              max="0.5"
-              value={engine.level ?? 0}
-              aria-label="Audio input level"
-            />
-          </div>
-        )}
-        <div className="local-status">
-          ✓{" "}
-          {session
-            ? `Saved locally through ${stamp(session.totalSamples / session.sampleRate)}`
-            : "Audio is saved locally before processing"}
-        </div>
-        {activeOther && (
-          <p className="hint">
-            Another lecture is recording. Controls above apply to that active
-            recording.
-          </p>
-        )}
-      </section>
+          {activeOther && (
+            <p className="hint">
+              Another lecture is recording. Controls above apply to that active
+              recording.
+            </p>
+          )}
+        </section>
+      )}
       <nav aria-label="Workspace views">
-        {(["transcript", "notes", "library"] as const).map((v) => (
+        {(["transcript", "notes", "library", "documents"] as const).map((v) => (
           <button
             key={v}
             className={view === v ? "active" : ""}
-            onClick={() => setView(v)}
+            onClick={() => {
+              if (
+                view === "documents" &&
+                documentsDirty &&
+                v !== "documents" &&
+                !confirm("Discard unsaved document edits?")
+              )
+                return;
+              setDocumentsDirty(false);
+              setView(v);
+            }}
           >
             {v[0].toUpperCase() + v.slice(1)}
             {v === "library" && (
@@ -811,7 +817,7 @@ function App() {
           </button>
         ))}
       </nav>
-      {session && (
+      {view !== "documents" && session && (
         <div className="session-heading">
           <strong>{session.title}</strong>
           <span className={`status ${session.state}`}>{session.state}</span>
@@ -1130,6 +1136,17 @@ function App() {
                   {w}
                 </div>
               ))}
+              <AddToDocument
+                key={note.id}
+                notesId={note.id}
+                onAdded={(id) => {
+                  setDocumentId(id);
+                  setView("documents");
+                  setMessage(
+                    "Chapter saved in your study document. Export PDF to create or update a file.",
+                  );
+                }}
+              />
               <button className="secondary" onClick={() => exportText("notes")}>
                 Export Markdown ↓
               </button>
@@ -1143,6 +1160,13 @@ function App() {
             </div>
           )}
         </>
+      )}
+      {view === "documents" && (
+        <StudyDocuments
+          key={documentId ?? "documents"}
+          initialId={documentId}
+          onDirtyChange={setDocumentsDirty}
+        />
       )}
       {view === "library" && (
         <>

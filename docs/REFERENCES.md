@@ -25,3 +25,12 @@ Existing project's MIT LICENSE is preserved. No third-party sample application s
 - [Gemini 3.5 Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite): documents audio input and structured output support; current default for both stages.
 - [Models API](https://ai.google.dev/api/models): paginated model listing and supported generation methods. Listing does not guarantee inference/quota/billing access.
 - [Troubleshooting](https://ai.google.dev/gemini-api/docs/troubleshooting): status-specific error handling and project access checks.
+
+## Local PDF export (0.2.0)
+
+- [pdfmake 0.1/0.2 client-side methods](https://pdfmake.github.io/docs/0.1/getting-started/client-side/methods/): locally generated PDF blobs.
+- [Embedded virtual fonts](https://pdfmake.github.io/docs/0.1/fonts/custom-fonts-client-side/vfs/): no remote font requests.
+- [Table of contents](https://pdfmake.github.io/docs/0.1/document-definition-object/toc/) and [links](https://pdfmake.github.io/docs/0.1/document-definition-object/links/).
+- [Roboto Classic font license](https://github.com/googlefonts/roboto-classic/blob/main/OFL.txt): SIL Open Font License; the full notice is packaged as ROBOTO-LICENSE.txt.
+
+PDF generation uses pinned pdfmake 0.2.23 (MIT), marked 15.0.12 (MIT), and embedded Roboto fonts. Mathematical text is preserved as text; full LaTeX compilation is not included.

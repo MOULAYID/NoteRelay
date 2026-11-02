@@ -2,11 +2,12 @@ import { test, expect, chromium, type BrowserContext } from "@playwright/test";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
+import { studyDocumentFlow } from "../helpers/study-flow";
+test.use({ trace: "off" });
 let context: BrowserContext, extensionId: string, profile: string;
-test.beforeEach(async () => {
-  profile = await mkdtemp(join(tmpdir(), "noterelay-e2e-"));
+async function launchExtension(profilePath: string) {
   const extension = resolve("dist");
-  context = await chromium.launchPersistentContext(profile, {
+  return chromium.launchPersistentContext(profilePath, {
     headless: true,
     channel: process.env.CHROMIUM_PATH ? undefined : "chromium",
     executablePath: process.env.CHROMIUM_PATH || undefined,
@@ -30,6 +31,10 @@ test.beforeEach(async () => {
     ],
     serviceWorkers: "allow",
   });
+}
+test.beforeEach(async () => {
+  profile = await mkdtemp(join(tmpdir(), "noterelay-e2e-"));
+  context = await launchExtension(profile);
   const worker =
     context.serviceWorkers()[0] ??
     (await context.waitForEvent("serviceworker", { timeout: 15000 }));
@@ -229,4 +234,20 @@ test("discovers models and shows a safe HTTP diagnostic for rejected audio reque
   await expect(page.getByRole("alert")).not.toContainText(
     "PRIVATE_PROVIDER_CONTENT",
   );
+});
+
+test("study documents persist chapters through a full extension browser restart and export PDF", async () => {
+  const page = await context.newPage();
+  await page.goto(
+    `chrome-extension://${extensionId}/library.html?view=documents`,
+  );
+  await studyDocumentFlow(page, async () => {
+    await context.close();
+    context = await launchExtension(profile);
+    const reopened = await context.newPage();
+    await reopened.goto(
+      `chrome-extension://${extensionId}/library.html?view=documents`,
+    );
+    return reopened;
+  });
 });

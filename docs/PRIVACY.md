@@ -23,3 +23,9 @@ Library can delete audio independently or delete an entire lecture. Existing exp
 ## Logs and diagnostics
 
 No transcript, audio, request body, or key is intentionally logged. Stored processing errors are generic and sanitized. Usage export includes provider token counts, task type/status/attempts, model ID, elapsed time, and timestamps; review exports before sharing.
+
+## Study documents
+
+Collected chapters retain a local snapshot of notes, lecture title, original source URL where applicable, source timestamps, and model/version metadata. Document editing, PDF creation, and source backup/import do not send content to Google or any other server. Fonts and executable PDF dependencies are bundled locally. Optional Save PDF as asks for a file destination only when explicitly invoked; NoteRelay does not retain a file handle to silently overwrite future exports.
+
+Deleting an original lecture does not delete its snapshots in study documents. Delete those documents/chapters separately if desired. Deleting a study document does not delete original lecture data, prior downloads, or backups. Exported PDFs and source backups include lecture content; they are not encrypted.

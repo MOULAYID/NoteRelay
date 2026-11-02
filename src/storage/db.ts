@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import type { StudyDocument } from "../documents/model";
 import type {
   Session,
   AudioBlock,
@@ -9,6 +10,7 @@ import type {
   Usage,
 } from "../domain/types";
 export class NoteRelayDB extends Dexie {
+  studyDocuments!: Table<StudyDocument, string>;
   sessions!: Table<Session, string>;
   blocks!: Table<AudioBlock, string>;
   anchors!: Table<Anchor, number>;
@@ -27,6 +29,8 @@ export class NoteRelayDB extends Dexie {
       jobs: "id,sessionId,status,nextRun",
       usage: "id,jobId,at",
     });
+    // Additive migration: retain every pre-existing lecture, audio block and note.
+    this.version(2).stores({ studyDocuments: "id,updatedAt,title" });
   }
 }
 export const db = new NoteRelayDB();

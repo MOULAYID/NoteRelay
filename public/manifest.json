@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "NoteRelay",
   "description": "Record tab or classroom audio locally, transcribe with your Gemini key, and revisit source-linked notes.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "minimum_chrome_version": "116",
   "permissions": [
     "tabCapture",

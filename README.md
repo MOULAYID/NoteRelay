@@ -4,11 +4,17 @@
 
 A local-first Chrome extension for tab audio and classroom microphone recordings. Save the audio first, transcribe with your own Gemini key, and create study materials that link back to their transcript evidence.
 
-> **0.1.1 preview:** desktop Chrome, one recording at a time. This is an engineering prototype, not a universal course-platform integration. Read [supported environments and limits](docs/SUPPORT.md) and [verification evidence](docs/TESTING.md).
+> **0.2.0 preview:** desktop Chrome, one recording at a time. This is an engineering prototype, not a universal course-platform integration. Read [supported environments and limits](docs/SUPPORT.md) and [verification evidence](docs/TESTING.md).
 
 ![NoteRelay interface preview, rendered from the bundled application with mocked Chrome APIs](docs/media/interface-preview.png)
 
 _UI preview only; capture verification status is documented below._
+
+## Study documents: new in 0.2.0
+
+In **Notes**, choose **Add to study document** to create a collection or add a lecture to an existing one. Each video becomes a chapter titled from the original lecture. In **Documents**, rename/reorder/remove chapters and **Save document**. Then **Export PDF** for a selectable-text file, or export a `.noterelay.json` editable backup to reopen on another device. No copying/pasting, LaTeX installation, extra AI calls, or hosted service is needed.
+
+[Study document guide, limits, and safe update instructions](docs/STUDY_DOCUMENTS.md). Saving locally does not update a previously downloaded PDF.
 
 ## What it does
 
@@ -42,7 +48,7 @@ npm run package
 5. Open Settings (gear), paste your Gemini key, choose models, and save.
 6. For a classroom recording, open **Microphone setup**, explicitly grant microphone permission, then select Microphone in the panel.
 
-`artifacts/NoteRelay-0.1.1.zip` contains the unpacked extension files. Extract it before loading it into Chrome. This repository is not yet a Chrome Web Store listing.
+`artifacts/NoteRelay-0.2.0.zip` contains the unpacked extension files. Extract it before loading it into Chrome. This repository is not yet a Chrome Web Store listing.
 
 ## Gemini configuration
 

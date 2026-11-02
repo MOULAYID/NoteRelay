@@ -9,3 +9,5 @@ test-results/
 coverage/
 benchmarks/results/*.json
 !benchmarks/results/.gitkeep
+
+tmp/

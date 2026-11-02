@@ -73,3 +73,21 @@ Suggested results table: model/provider, corpus/condition, WER, CER, term accura
 The model-access/error-diagnostic update passes 29 local unit/integration tests, strict type checking, linting, and production packaging. Added coverage distinguishes HTTP 400 invalid keys, HTTP 404 unavailable models, schema rejection, billing eligibility, and arbitrary secret-bearing server payloads. Model listing pagination/filtering and synthetic-silence audio testing are covered without live credentials. The browser suite adds a mocked Google endpoint test for model discovery and safely rendered HTTP errors.
 
 No real Google key was supplied to the implementation environment, so the screenshot’s exact failed HTTP response cannot be reconstructed. Gemini 2.5 new-project restrictions are a plausible explanation, not a confirmed account-specific diagnosis. The update preserves explicit model choice rather than silently substituting a provider/model or deleting a recording.
+
+## 0.2.0 study document verification
+
+- **37 unit/integration tests pass** locally, including v1 → v2 migration preserving legacy audio, notes, transcripts and jobs; portable backup import; chapter ordering/duplicate handling; snapshot independence; conflict protection; and safe source/PDF definitions.
+- A real Chromium browser workflow with explicit mocked Chrome APIs creates a document from lecture 1, appends lecture 2, renames/reorders chapters, closes/restarts the browser profile, reopens the document, downloads PDF and JSON, imports an independent copy, removes a chapter/document, and verifies original notes remain. It passed locally without a Gemini request. The same flow is included in the full-extension Chrome suite.
+- **PDF QA:** generated one seven-page A4 fixture containing three chapters, a long French title, extended paragraphs, a long URL/identifier, a table, lists, code, and English/French/Greek text. All seven pages were rendered with Poppler and visually inspected. pypdf extraction verified accents (Électricité, fréquence, cœur, œuvre, naïve), μ/Δ/≤, the final numbered example, and chapter 3. Link annotations included valid video timestamps and no file/javascript/extension recording URLs. pdfplumber found no visible glyphs outside the checked page boundaries.
+- The browser download path is tested. The optional OS-native Save PDF as chooser/overwrite dialog is not automated; it has a normal download fallback. Universal emoji/scripts, full LaTeX, image embedding, arbitrary PDF reconstruction, and very large collection performance are not claimed.
+
+Reproduce the PDF fixture locally:
+
+```bash
+npx esbuild tests/helpers/generate-study-pdf.ts --bundle --platform=node --format=cjs --outfile=tmp/pdfs/generate.cjs
+node tmp/pdfs/generate.cjs
+pdftoppm -r 85 -png tmp/pdfs/study-document-qa.pdf tmp/pdfs/page
+pdftotext -layout tmp/pdfs/study-document-qa.pdf tmp/pdfs/study-document-qa.txt
+```
+
+The fixture contains original synthetic study material, not a private course recording. Its generated PDF is a QA intermediate rather than an asserted ASR-quality benchmark.

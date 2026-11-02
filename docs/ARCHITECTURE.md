@@ -85,3 +85,9 @@ No overlapping ASR windows in v0.1; a phrase crossing a window boundary may suff
 The entire text transcript is reused for notes with a conservative 800,000-character guard. Larger inputs fail explicitly. There is no silent truncation and no hierarchical summarization adapter yet.
 
 The service worker reads credentials only for trusted extension contexts. Keys never enter player messages or exported records. No backend or external analytics. Dedicated speech-to-text and local Whisper implementations can implement the interfaces without changing storage or capture.
+
+## Decision 006: study documents (v0.2.0)
+
+Schema v2 adds one studyDocuments store. Ordered chapters embed immutable notes snapshots, source/version metadata, and validated source intervals, so they outlive original-session deletion and are portable in a versioned JSON backup. Document edits use optimistic revision checks. Imports always create new IDs. The importer validates size/schema/URLs and does not reconstruct PDFs.
+
+The Documents UI keeps edits as a draft until Save document. PDF/backup exports require saved content. pdfmake 0.2.23 and embedded Roboto fonts create PDF locally; marked parses supported Markdown into declarative text, never executable HTML. The PDF module is loaded on export from local extension chunks. JSON is the editable source; no LaTeX compiler, backend, recording changes, or Gemini calls are required. See STUDY_DOCUMENTS.md for limits and source-link semantics.

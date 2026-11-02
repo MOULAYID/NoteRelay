@@ -22,6 +22,8 @@ const options = {
     worklet: "src/audio/worklet.ts",
   },
   bundle: true,
+  splitting: true,
+  chunkNames: "chunks/[name]-[hash]",
   outdir: "dist",
   format: "esm",
   target: "chrome116",
@@ -34,12 +36,31 @@ if (process.argv.includes("--watch")) {
   await ctx.watch();
 } else await build(options);
 
-let notices = "NoteRelay runtime dependency notices\n\n";
-for (const name of ["react", "react-dom", "scheduler", "dexie", "zod"]) {
-  const dir = `node_modules/${name}`;
-  const entries = await readdir(dir);
-  const license = entries.find((f) => /^license(\.|$)/i.test(f));
-  if (!license) throw new Error(`Missing runtime license: ${name}`);
-  notices += `\n===== ${name} =====\n${await readFile(`${dir}/${license}`, "utf8")}\n`;
+let notices =
+  "NoteRelay runtime dependency notices\n\nEmbedded Roboto font terms: see ROBOTO-LICENSE.txt.\n\n";
+const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
+for (const [dir, metadata] of Object.entries(lock.packages)) {
+  if (!dir.startsWith("node_modules/") || metadata.dev) continue;
+  let entries;
+  try {
+    entries = await readdir(dir);
+  } catch (error) {
+    if (metadata.optional) continue;
+    throw error;
+  }
+  const pkg = JSON.parse(await readFile(`${dir}/package.json`, "utf8"));
+  const licenses = entries.filter((f) =>
+    /^(licen[cs]e|copying|notice)([.\-_]|$)/i.test(f),
+  );
+  notices += `\n===== ${pkg.name} ${pkg.version} (${pkg.license || "see package"}) =====\n`;
+  if (licenses.length) {
+    for (const file of licenses)
+      notices += `${await readFile(`${dir}/${file}`, "utf8")}\n`;
+  } else {
+    // Some upstream tarballs omit a separate LICENSE; retain their published attribution and README.
+    const readme = entries.find((f) => /^readme(\.|$)/i.test(f));
+    notices += `Published package attribution: ${JSON.stringify(pkg.author || pkg.contributors || pkg.repository || "See upstream repository")}\n`;
+    if (readme) notices += `${await readFile(`${dir}/${readme}`, "utf8")}\n`;
+  }
 }
 await writeFile("dist/THIRD_PARTY_NOTICES.txt", notices);

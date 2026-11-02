@@ -58,7 +58,8 @@ test("browser-rendered interface: navigation and microphone settings with explic
         "settings.html",
         "ui.js",
         "ui.css",
-      ].includes(path)
+      ].includes(path) &&
+      !/^(?:chunks\/)?[a-zA-Z0-9_-]+\.js$/.test(path)
     ) {
       await route.abort();
       return;

@@ -5,6 +5,6 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: "list",
-  use: { trace: "retain-on-failure" },
+  use: { trace: "retain-on-failure", actionTimeout: 10000 },
   outputDir: "test-results",
 });
