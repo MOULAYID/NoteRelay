@@ -119,8 +119,8 @@ export interface Settings {
   progressive: boolean;
 }
 export const DEFAULT_SETTINGS: Settings = {
-  transcriptionModel: "gemini-2.5-flash",
-  summaryModel: "gemini-2.5-flash-lite",
+  transcriptionModel: "gemini-3.5-flash-lite",
+  summaryModel: "gemini-3.5-flash-lite",
   language: "auto",
   rememberKey: false,
   progressive: false,

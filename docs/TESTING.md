@@ -67,3 +67,9 @@ For summary evaluation, prepare an evidence-linked checklist of essential claims
 Usage export contains observed provider tokens and client request elapsed time, including successful outputs' reported thinking tokens. Failed/ambiguous requests may still incur cost and are not included as successful usage events. Calculate costs using the exact model's dated prices; do not compare audio and text solely by nominal per-token price. Report retries and overlapping input separately.
 
 Suggested results table: model/provider, corpus/condition, WER, CER, term accuracy, timestamp p95, transcript p50/p95 latency, real-time factor, successful/failed tasks, tokens, measured cost/lecture hour, memory peak, disk/hour, recovery successes/attempts. Leave cells unmeasured until evidence exists.
+
+## 0.1.1 regression checks
+
+The model-access/error-diagnostic update passes 29 local unit/integration tests, strict type checking, linting, and production packaging. Added coverage distinguishes HTTP 400 invalid keys, HTTP 404 unavailable models, schema rejection, billing eligibility, and arbitrary secret-bearing server payloads. Model listing pagination/filtering and synthetic-silence audio testing are covered without live credentials. The browser suite adds a mocked Google endpoint test for model discovery and safely rendered HTTP errors.
+
+No real Google key was supplied to the implementation environment, so the screenshot’s exact failed HTTP response cannot be reconstructed. Gemini 2.5 new-project restrictions are a plausible explanation, not a confirmed account-specific diagnosis. The update preserves explicit model choice rather than silently substituting a provider/model or deleting a recording.

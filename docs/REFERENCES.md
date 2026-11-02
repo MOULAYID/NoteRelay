@@ -18,3 +18,10 @@ Reviewed 2026-11-02. Availability and terms may change; implementation compatibi
 - [Chrome Web Store policies](https://developer.chrome.com/docs/webstore/program-policies/policies/): review before submission.
 
 Existing project's MIT LICENSE is preserved. No third-party sample application source was copied into this implementation. Runtime libraries retain their licenses; esbuild emits available legal comments into the bundle. Review upstream dependency LICENSE files for distribution notices.
+
+## Model access and diagnostics update (0.1.1)
+
+- [Gemini 2.5 Flash model page](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash): access restricted to prior active users; new projects should use newer models. This is an access restriction, not proof that every 2.5 endpoint is shut down.
+- [Gemini 3.5 Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite): documents audio input and structured output support; current default for both stages.
+- [Models API](https://ai.google.dev/api/models): paginated model listing and supported generation methods. Listing does not guarantee inference/quota/billing access.
+- [Troubleshooting](https://ai.google.dev/gemini-api/docs/troubleshooting): status-specific error handling and project access checks.

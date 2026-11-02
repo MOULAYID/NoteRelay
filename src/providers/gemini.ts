@@ -1,14 +1,10 @@
 import { TranscriptSchema, NotesSchema } from "../domain/validation";
 import type { Segment, Transcript, NoteFormat } from "../domain/types";
 import { id } from "../domain/types";
-export class ProviderError extends Error {
-  constructor(
-    public retryable: boolean,
-    message: string,
-  ) {
-    super(`NR:${message}`);
-  }
-}
+import { ProviderError, apiError } from "./api-errors";
+export { ProviderError } from "./api-errors";
+import { wavHeader } from "../audio/pcm";
+import { z } from "zod";
 type Part =
   { text: string } | { inlineData: { mimeType: string; data: string } };
 export interface ProviderResult<T> {
@@ -54,50 +50,30 @@ export async function request(
       false,
       "Add your Gemini API key in Settings before processing.",
     );
+  const selectedModel = modelName(model);
   let response: Response;
   try {
-    response = await fetch(
-      `${API}/models/${modelName(model)}:generateContent`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        signal: AbortSignal.timeout(70000),
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: system }] },
-          contents: [{ role: "user", parts }],
-          generationConfig: {
-            temperature: 0,
-            responseMimeType: "application/json",
-            responseSchema: schema,
-            maxOutputTokens: 16384,
-          },
-        }),
-      },
-    );
+    response = await fetch(`${API}/models/${selectedModel}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      signal: AbortSignal.timeout(70000),
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+          maxOutputTokens: 16384,
+        },
+      }),
+    });
   } catch {
     throw new ProviderError(
       true,
       "Network request interrupted or timed out. Saved audio is safe.",
     );
   }
-  if (!response.ok) {
-    if (response.status === 429)
-      throw new ProviderError(
-        true,
-        "Gemini quota or rate limit reached. Retry later or check your Google project.",
-      );
-    if (response.status >= 500)
-      throw new ProviderError(true, "Gemini is temporarily unavailable.");
-    if (response.status === 401 || response.status === 403)
-      throw new ProviderError(
-        false,
-        "Gemini rejected the key or project access. Check Settings and billing.",
-      );
-    throw new ProviderError(
-      false,
-      "Gemini rejected this request. Check the selected model and its audio/JSON support.",
-    );
-  }
+  if (!response.ok) throw await apiError(response);
   const data = await response.json();
   const candidate = data.candidates?.[0];
   if (candidate?.finishReason !== "STOP")
@@ -262,3 +238,85 @@ export const gemini: TranscriptionProvider & StudyProvider = {
     return { ...result, value: parsed.data };
   },
 };
+
+export interface AvailableModel {
+  id: string;
+  label: string;
+}
+const ModelPage = z.object({
+  models: z
+    .array(
+      z.object({
+        name: z.string(),
+        displayName: z.string().optional(),
+        supportedGenerationMethods: z.array(z.string()).optional(),
+      }),
+    )
+    .default([]),
+  nextPageToken: z.string().optional(),
+});
+export async function listModels(key: string): Promise<AvailableModel[]> {
+  if (!key.trim())
+    throw new ProviderError(
+      false,
+      "Add your Gemini API key before loading models.",
+    );
+  const found = new Map<string, AvailableModel>();
+  const seen = new Set<string>();
+  let token: string | undefined;
+  for (let page = 0; page < 10; page++) {
+    const url = new URL(`${API}/models`);
+    url.searchParams.set("pageSize", "1000");
+    if (token) url.searchParams.set("pageToken", token);
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        headers: { "x-goog-api-key": key },
+        signal: AbortSignal.timeout(20000),
+      });
+    } catch {
+      throw new ProviderError(
+        true,
+        "Could not load models from Google. Check your connection and retry.",
+      );
+    }
+    if (!response.ok) throw await apiError(response);
+    const parsed = ModelPage.safeParse(await response.json());
+    if (!parsed.success)
+      throw new ProviderError(false, "Google returned an invalid model list.");
+    for (const model of parsed.data.models) {
+      const match = /^models\/(gemini-[a-zA-Z0-9._-]{1,100})$/.exec(model.name);
+      if (
+        match &&
+        model.supportedGenerationMethods?.includes("generateContent") &&
+        !/(tts|image|transcribe|live|embedding)/i.test(match[1])
+      )
+        found.set(match[1], {
+          id: match[1],
+          label: model.displayName ?? match[1],
+        });
+    }
+    token = parsed.data.nextPageToken;
+    if (!token)
+      return [...found.values()].sort((a, b) => a.id.localeCompare(b.id));
+    if (seen.has(token)) break;
+    seen.add(token);
+  }
+  throw new ProviderError(
+    false,
+    "Model listing did not complete. Try again later.",
+  );
+}
+export async function testAudioConnection(key: string, model: string) {
+  const samples = 4000;
+  await gemini.transcribe(
+    key,
+    model,
+    new Blob([wavHeader(samples, 16000), new ArrayBuffer(samples * 2)], {
+      type: "audio/wav",
+    }),
+    samples / 16000,
+    "auto",
+    0,
+  );
+}

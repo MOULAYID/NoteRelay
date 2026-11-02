@@ -179,3 +179,54 @@ test("persists an API key only when requested and removes it", async () => {
     )
     .toBeUndefined();
 });
+
+test("discovers models and shows a safe HTTP diagnostic for rejected audio requests", async () => {
+  const page = await context.newPage();
+  await page.route(
+    "https://generativelanguage.googleapis.com/**",
+    async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          json: {
+            models: [
+              {
+                name: "models/gemini-3.5-flash-lite",
+                displayName: "Gemini 3.5 Flash-Lite",
+                supportedGenerationMethods: ["generateContent"],
+              },
+            ],
+          },
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 404,
+        json: {
+          error: {
+            status: "NOT_FOUND",
+            message: "selected model not found; PRIVATE_PROVIDER_CONTENT",
+          },
+        },
+      });
+    },
+  );
+  await page.goto(`chrome-extension://${extensionId}/settings.html`);
+  await page.locator("input[type=password]").fill("test-not-a-real-api-key");
+  await page
+    .getByRole("button", { name: "Load available models", exact: true })
+    .click();
+  await expect(page.locator("datalist option")).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Use current defaults", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Transcription model", { exact: true }),
+  ).toHaveValue("gemini-3.5-flash-lite");
+  await page
+    .getByRole("button", { name: "Test transcription audio", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText("HTTP 404 NOT_FOUND");
+  await expect(page.getByRole("alert")).not.toContainText(
+    "PRIVATE_PROVIDER_CONTENT",
+  );
+});

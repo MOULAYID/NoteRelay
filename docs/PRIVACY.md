@@ -6,7 +6,7 @@ NoteRelay has no developer-operated server, analytics tracker, account system, o
 
 The extension stores recorded audio, lecture title, selected source, sanitized source page URL, timing observations, transcript versions, generated notes, job state, and usage measurements in its own Chrome profile storage. Microphone device selection is not synchronized. API keys are session-only unless you explicitly select local retention.
 
-Recordings are local-first, not necessarily local-only: starting recording alone does not upload audio when progressive processing is disabled. Enabling progressive transcription explicitly sends committed windows to Google. Clicking transcription sends saved audio. Generating notes sends transcript text and source IDs. A connection test sends a small text request. The user's Google project credentials authenticate those requests.
+Recordings are local-first, not necessarily local-only: starting recording alone does not upload audio when progressive processing is disabled. Enabling progressive transcription explicitly sends committed windows to Google. Clicking transcription sends saved audio. Generating notes sends transcript text and source IDs. A notes connection test sends a small text request. Audio testing sends 0.25 seconds of synthetic silence, not any saved lecture. Model discovery sends only an authenticated metadata request. The user's Google project credentials authenticate those requests.
 
 The extension does not attach unrelated browsing history, unrelated tabs, or microphone input in tab mode. A captured tab may itself play multiple audio sources; capture includes its mixed audio. Microphone mode can record nearby people. Use the appropriate permissions and institution rules.
 

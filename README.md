@@ -4,7 +4,7 @@
 
 A local-first Chrome extension for tab audio and classroom microphone recordings. Save the audio first, transcribe with your own Gemini key, and create study materials that link back to their transcript evidence.
 
-> **0.1.0 preview:** desktop Chrome, one recording at a time. This is an engineering prototype, not a universal course-platform integration. Read [supported environments and limits](docs/SUPPORT.md) and [verification evidence](docs/TESTING.md).
+> **0.1.1 preview:** desktop Chrome, one recording at a time. This is an engineering prototype, not a universal course-platform integration. Read [supported environments and limits](docs/SUPPORT.md) and [verification evidence](docs/TESTING.md).
 
 ![NoteRelay interface preview, rendered from the bundled application with mocked Chrome APIs](docs/media/interface-preview.png)
 
@@ -42,15 +42,15 @@ npm run package
 5. Open Settings (gear), paste your Gemini key, choose models, and save.
 6. For a classroom recording, open **Microphone setup**, explicitly grant microphone permission, then select Microphone in the panel.
 
-`artifacts/NoteRelay-0.1.0.zip` contains the unpacked extension files. Extract it before loading it into Chrome. This repository is not yet a Chrome Web Store listing.
+`artifacts/NoteRelay-0.1.1.zip` contains the unpacked extension files. Extract it before loading it into Chrome. This repository is not yet a Chrome Web Store listing.
 
 ## Gemini configuration
 
 Each user supplies their own key. Without **Remember key on this device**, it is stored in `chrome.storage.session` until the browser session ends. Remembered keys use trusted-context-only local extension storage. Neither is an encrypted credential vault. Keys are never synchronized, sent to page content scripts, exported, or bundled.
 
-Default adapters use the Gemini **GenerateContent** REST API with audio input and validated JSON output. Default model IDs are `gemini-2.5-flash` for transcription and `gemini-2.5-flash-lite` for notes; change these if your project no longer offers them. Use models supporting the required modalities and structured output. A successful text connection test does not prove audio access or transcription accuracy.
+Default adapters use the Gemini **GenerateContent** REST API with audio input and validated JSON output. Default model IDs are `gemini-3.5-flash-lite` for transcription and notes; change these if your project no longer offers them. Use models supporting the required modalities and structured output. Use **Load available models** to inspect the models returned for your key, and **Test transcription audio** to send 0.25 seconds of synthetic WAV silence through the transcription path. Listing models does not prove inference/billing access; the text test does not prove audio access, and neither test proves transcription accuracy. Google restricts Gemini 2.5 access for new projects. Existing model settings are preserved; choose **Use current defaults**, test, and save to change them.
 
-Dedicated Transcribe and Live models use different protocols and **are not adapters in 0.1.0**. Do not enter a dedicated Transcribe ID expecting it to work through GenerateContent.
+Dedicated Transcribe and Live models use different protocols and **are not adapters in 0.1.1**. Do not enter a dedicated Transcribe ID expecting it to work through GenerateContent.
 
 Progressive uploads are **off by default**. Enable them in Settings only if you want committed audio sent to Google while recording. Otherwise, stop and click **Transcribe saved audio with Gemini**. Notes generation sends the saved transcript, not the audio.
 
@@ -93,3 +93,9 @@ Use `CHROMIUM_PATH=/path/to/chromium npm run test:e2e` for a compatible local br
 - [Privacy](docs/PRIVACY.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 There is no hosted backend, account system, telemetry, or subscription service. The source is MIT licensed; dependency licenses remain applicable.
+
+## Updating an installed preview without losing saved lectures
+
+Replace the files **inside the same folder originally loaded into Chrome**, then click **Reload** on the existing NoteRelay card in `chrome://extensions`. Do not remove the extension or load a separate new folder if you need to retain its data. Stop recording and export important audio first.
+
+For the 0.1.1 model-access fix: Settings → Use current defaults → Test transcription audio → Save settings. For an existing failed recording, return to Transcript and choose **Create new transcription version**. Failed tasks retain their original model; retrying them alone does not adopt a newly selected model. The old audio/transcripts/notes are preserved. HTTP diagnostics show a code and safe explanation without echoing provider payloads.

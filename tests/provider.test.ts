@@ -185,3 +185,104 @@ it("retains saved audio and schedules a bounded retry after rate limiting", asyn
   expect(j.nextRun).toBeGreaterThan(Date.now());
   expect(await db.blocks.count()).toBe(1);
 });
+
+it("reports unavailable models with HTTP code without echoing provider content", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            status: "NOT_FOUND",
+            message: "models/legacy not found; private-request-content",
+          },
+        }),
+        { status: 404 },
+      ),
+    ),
+  );
+  const error = await request("test-key", "legacy", [], {}, "test").catch(
+    (e) => e,
+  );
+  expect(error.message).toContain("HTTP 404 NOT_FOUND");
+  expect(error.message).toContain("Load available models");
+  expect(error.message).not.toContain("private-request-content");
+});
+it("classifies invalid keys returned as HTTP 400 without exposing the key", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            status: "INVALID_ARGUMENT",
+            message: "API key not valid: test-secret",
+            details: [{ reason: "API_KEY_INVALID" }],
+          },
+        }),
+        { status: 400 },
+      ),
+    ),
+  );
+  const error = await request("test-key", "test-model", [], {}, "test").catch(
+    (e) => e,
+  );
+  expect(error.retryable).toBe(false);
+  expect(error.message).toContain("HTTP 400 INVALID_ARGUMENT");
+  expect(error.message).toContain("API key");
+  expect(error.message).not.toContain("test-secret");
+});
+it("classifies schema and project eligibility failures without leaking server text", async () => {
+  const mock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            status: "INVALID_ARGUMENT",
+            message: "responseSchema is invalid private-source",
+          },
+        }),
+        { status: 400 },
+      ),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            status: "FAILED_PRECONDITION",
+            message:
+              "Free tier is not available in this region. Enable billing. private-source",
+          },
+        }),
+        { status: 400 },
+      ),
+    );
+  vi.stubGlobal("fetch", mock);
+  const schema = await request("test-key", "test-model", [], {}, "test").catch(
+    (e) => e,
+  );
+  expect(schema.message).toContain("structured JSON");
+  expect(schema.message).not.toContain("private-source");
+  const billing = await request("test-key", "test-model", [], {}, "test").catch(
+    (e) => e,
+  );
+  expect(billing.message).toContain("eligibility restriction");
+  expect(billing.message).not.toContain("private-source");
+});
+it("rejects invalid model IDs before making a network call", async () => {
+  const mock = vi.fn();
+  vi.stubGlobal("fetch", mock);
+  await expect(
+    request("test-key", "https://invalid-model/", [], {}, "test"),
+  ).rejects.toThrow("valid Gemini model ID");
+  expect(mock).not.toHaveBeenCalled();
+});
+it("does not force a legacy temperature parameter on newer Gemini models", async () => {
+  const mock = vi.fn().mockResolvedValue(response({ ok: true }));
+  vi.stubGlobal("fetch", mock);
+  await request("test-key", "gemini-3.5-flash-lite", [], {}, "test");
+  expect(
+    JSON.parse(mock.mock.calls[0][1].body).generationConfig,
+  ).not.toHaveProperty("temperature");
+});

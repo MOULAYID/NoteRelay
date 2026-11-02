@@ -27,7 +27,12 @@ import {
   retryFailed,
 } from "../jobs/queue";
 import { wavHeader } from "../audio/pcm";
-import { testConnection } from "../providers/gemini";
+import {
+  testConnection,
+  testAudioConnection,
+  listModels,
+  type AvailableModel,
+} from "../providers/gemini";
 import "./style.css";
 async function command(data: Record<string, unknown>) {
   const result = await chrome.runtime.sendMessage(data);
@@ -58,6 +63,7 @@ function download(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 function App() {
+  const [models, setModels] = useState<AvailableModel[]>([]);
   const path = location.pathname;
   const settingsPage = path.includes("settings"),
     micPage = path.includes("microphone"),
@@ -396,9 +402,10 @@ function App() {
             <section className="card">
               <h2>Gemini API</h2>
               <p className="muted">
-                Requests use your Google project’s quota and billing. A
-                connection test makes a small text request; it does not validate
-                transcription quality.
+                Requests use your Google project’s quota and billing. A Notes
+                testing sends a small text request. Audio testing sends 0.25
+                seconds of synthetic silence, never a saved lecture. Neither
+                test measures transcription quality.
               </p>
               <label>
                 API key
@@ -433,6 +440,7 @@ function App() {
                 <label>
                   Transcription model
                   <input
+                    list="gemini-models"
                     value={settings.transcriptionModel}
                     onChange={(e) =>
                       setSettings({
@@ -445,6 +453,7 @@ function App() {
                 <label>
                   Notes model
                   <input
+                    list="gemini-models"
                     value={settings.summaryModel}
                     onChange={(e) =>
                       setSettings({ ...settings, summaryModel: e.target.value })
@@ -452,6 +461,55 @@ function App() {
                   />
                 </label>
               </div>
+              <datalist id="gemini-models">
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </datalist>
+              <div className="button-row">
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void perform(async () => {
+                      const available = await listModels(
+                        key || (await getKey()),
+                      );
+                      setModels(available);
+                      setMessage(
+                        `${available.length} GenerateContent models loaded. Choose a model in the fields and test its audio support. Listing alone does not verify billing or inference access.`,
+                      );
+                    })
+                  }
+                >
+                  Load available models
+                </button>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    setSettings({
+                      ...settings,
+                      transcriptionModel: DEFAULT_SETTINGS.transcriptionModel,
+                      summaryModel: DEFAULT_SETTINGS.summaryModel,
+                    });
+                    setMessage(
+                      "Current default models selected. Test them, then save settings.",
+                    );
+                  }}
+                >
+                  Use current defaults
+                </button>
+              </div>
+              <p className="hint">
+                Gemini 2.5 access is restricted for new projects. Current
+                default: Gemini 3.5 Flash-Lite. Existing saved model choices are
+                preserved until you change them. After changing the
+                transcription model, save settings and choose Create new
+                transcription version for an existing recording.
+              </p>
               <p className="hint">
                 Use GenerateContent models that support audio and structured
                 JSON. Dedicated Transcribe/Live model adapters are not included
@@ -489,7 +547,24 @@ function App() {
                     })
                   }
                 >
-                  Test connection
+                  Test notes connection
+                </button>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void perform(async () => {
+                      await testAudioConnection(
+                        key || (await getKey()),
+                        settings.transcriptionModel,
+                      );
+                      setMessage(
+                        "Transcription audio request succeeded. This synthetic-silence test verifies API/audio/JSON access, not speech accuracy.",
+                      );
+                    })
+                  }
+                >
+                  Test transcription audio
                 </button>
                 <button
                   className="text-button"
