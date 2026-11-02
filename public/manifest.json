@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "NoteRelay",
+  "description": "Record tab or classroom audio locally, transcribe with your Gemini key, and revisit source-linked notes.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "permissions": ["tabCapture", "offscreen", "sidePanel", "storage", "activeTab", "scripting", "unlimitedStorage", "alarms"],
+  "host_permissions": ["https://generativelanguage.googleapis.com/*"],
+  "background": {"service_worker": "background.js", "type": "module"},
+  "action": {"default_title": "Open NoteRelay", "default_icon": {"16":"icon16.png","32":"icon32.png","128":"icon128.png"}},
+  "icons":{"16":"icon16.png","32":"icon32.png","128":"icon128.png"},
+  "side_panel": {"default_path": "index.html"},
+  "options_page": "settings.html",
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; connect-src 'self' https://generativelanguage.googleapis.com"}
+}

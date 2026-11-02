@@ -1,0 +1,52 @@
+import js from "@eslint/js";
+import ts from "typescript-eslint";
+export default [
+  js.configs.recommended,
+  ...ts.configs.recommended,
+  {
+    files: ["**/*.{ts,tsx,js,mjs}"],
+    languageOptions: {
+      globals: {
+        chrome: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        window: "readonly",
+        document: "readonly",
+        navigator: "readonly",
+        performance: "readonly",
+        AudioContext: "readonly",
+        AudioWorkletNode: "readonly",
+        URL: "readonly",
+        Blob: "readonly",
+        btoa: "readonly",
+        fetch: "readonly",
+        AbortSignal: "readonly",
+        crypto: "readonly",
+        location: "readonly",
+        confirm: "readonly",
+        process: "readonly",
+        HTMLMediaElement: "readonly",
+        HTMLVideoElement: "readonly",
+        Uint8Array: "readonly",
+        ArrayBuffer: "readonly",
+        Float32Array: "readonly",
+        Int16Array: "readonly",
+        DataView: "readonly",
+        TextEncoder: "readonly",
+        Buffer: "readonly",
+        structuredClone: "readonly",
+        FileReader: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
+    },
+  },
+];

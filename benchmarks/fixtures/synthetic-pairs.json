@@ -1,0 +1,4 @@
+[
+  {"id":"synthetic-en","language":"en","reference":"A neuron computes a weighted sum.","hypothesis":"A neuron computes a weighted sum.","timing_errors_seconds":[0.2,0.4,0.1]},
+  {"id":"synthetic-fr","language":"fr","reference":"Un neurone calcule une somme pondérée.","hypothesis":"Un neurone calcule une somme.","timing_errors_seconds":[0.3,0.7]}
+]
