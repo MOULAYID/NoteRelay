@@ -56,7 +56,7 @@ Each user supplies their own key. Without **Remember key on this device**, it is
 
 Default adapters use the Gemini **GenerateContent** REST API with audio input and validated JSON output. Default model IDs are `gemini-3.5-flash-lite` for transcription and notes; change these if your project no longer offers them. Use models supporting the required modalities and structured output. Use **Load available models** to inspect the models returned for your key, and **Test transcription audio** to send 0.25 seconds of synthetic WAV silence through the transcription path. Listing models does not prove inference/billing access; the text test does not prove audio access, and neither test proves transcription accuracy. Google restricts Gemini 2.5 access for new projects. Existing model settings are preserved; choose **Use current defaults**, test, and save to change them.
 
-Dedicated Transcribe and Live models use different protocols and **are not adapters in 0.1.1**. Do not enter a dedicated Transcribe ID expecting it to work through GenerateContent.
+Dedicated Transcribe and Live models use different protocols and **are not adapters in this release**. Do not enter a dedicated Transcribe ID expecting it to work through GenerateContent.
 
 Progressive uploads are **off by default**. Enable them in Settings only if you want committed audio sent to Google while recording. Otherwise, stop and click **Transcribe saved audio with Gemini**. Notes generation sends the saved transcript, not the audio.
 

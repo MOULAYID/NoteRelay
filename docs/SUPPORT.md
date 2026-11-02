@@ -12,7 +12,7 @@
 - Generic top-frame HTML5 video/audio observation is implemented. Normal YouTube HTML5 media may work but is not yet certified across ads, sign-in states, and player variants. Coursera/Udemy frame integrations are not verified. Original-source links are not backups of a course.
 - Unsupported, missing, ambiguous, or stale video mapping falls back to a one-minute saved-audio excerpt. Deleting audio disables that fallback.
 - Audio-only notes cannot recover unseen slides, diagrams, formulas, demonstrations, or silently displayed code. AI explanations and references need human review.
-- Transcript edits require completed processing. Edits are full snapshots; original notes keep their version. No bookmarks, collection management, translation workflow, or cross-lecture search yet.
+- Transcript edits require completed processing. Edits are full snapshots; original notes keep their version. No bookmarks, dedicated course folders, translation workflow, or cross-lecture search yet. Study documents provide editable multi-lecture collections.
 - Export audio as bounded ten-minute WAV parts. A combined compressed multi-hour audio download, audio-file import, and Notion export are not implemented. Study document PDF export is available separately from the Documents view.
 - Export JSON contains source URLs, transcripts, and notes, but never the key or raw audio. Treat exported lecture content as private if appropriate.
 - Local storage is not encrypted against someone controlling your device/profile. Export independent copies before uninstalling or switching profiles.
