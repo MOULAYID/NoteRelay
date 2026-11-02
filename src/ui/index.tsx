@@ -142,7 +142,15 @@ function App() {
         .catch(() => {});
     poll();
     const timer = setInterval(poll, 1000);
-    return () => clearInterval(timer);
+    const refreshSettings = () => {
+      void getSettings().then(setSettings);
+      void getKey().then((value) => setHasKey(!!value));
+    };
+    chrome.storage.onChanged?.addListener(refreshSettings);
+    return () => {
+      clearInterval(timer);
+      chrome.storage.onChanged?.removeListener(refreshSettings);
+    };
   }, []);
   useEffect(() => {
     const current = sessions.find((s) => s.id === engine.sessionId);

@@ -1,5 +1,5 @@
 import { test, expect, chromium, type BrowserContext } from "@playwright/test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 let context: BrowserContext, extensionId: string, profile: string;
@@ -106,7 +106,13 @@ test("microphone records locally across panel closure; pause, resume, export, an
   await reopened
     .getByRole("button", { name: "Export selected WAV part" })
     .click();
-  expect((await download).suggestedFilename()).toMatch(/\.wav$/);
+  const exported = await download;
+  expect(exported.suggestedFilename()).toMatch(/\.wav$/);
+  const wav = await readFile((await exported.path())!);
+  expect(wav.toString("ascii", 0, 4)).toBe("RIFF");
+  expect(wav.toString("ascii", 8, 12)).toBe("WAVE");
+  expect(wav.byteLength).toBeGreaterThan(44);
+  expect(wav.readUInt32LE(40)).toBe(wav.byteLength - 44);
   // Simulate renderer loss while capturing; reopening engine marks saved session interrupted.
   await reopened
     .getByRole("button", { name: "♩ Microphone", exact: true })
