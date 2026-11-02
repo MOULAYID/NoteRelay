@@ -56,6 +56,42 @@ export async function enqueueTranscription(
     }
   });
 }
+export async function restartTranscription(
+  sessionId: string,
+  settings: Settings,
+) {
+  await db.transaction("rw", db.sessions, db.transcripts, db.jobs, async () => {
+    const session = await db.sessions.get(sessionId);
+    if (
+      !session ||
+      session.audioDeleted ||
+      ["recording", "starting", "paused"].includes(session.state)
+    )
+      throw new Error(
+        "NR:Stop recording and retain the audio before creating another transcription.",
+      );
+    if (
+      await db.jobs
+        .where("sessionId")
+        .equals(sessionId)
+        .filter((j) => j.status === "running")
+        .count()
+    )
+      throw new Error(
+        "NR:Wait for current processing to finish before starting a new version.",
+      );
+    await db.jobs
+      .where("sessionId")
+      .equals(sessionId)
+      .filter(
+        (j) =>
+          j.kind === "transcribe" && ["pending", "failed"].includes(j.status),
+      )
+      .modify({ status: "cancelled", leaseUntil: 0, error: undefined });
+    await db.sessions.update(sessionId, { activeTranscriptId: undefined });
+    await enqueueTranscription(sessionId, settings, true);
+  });
+}
 export async function enqueueNotes(
   sessionId: string,
   transcriptId: string,

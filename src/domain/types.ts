@@ -91,7 +91,7 @@ export interface Job {
   kind: "transcribe" | "notes";
   start: number;
   end: number;
-  status: "pending" | "running" | "done" | "failed";
+  status: "pending" | "running" | "done" | "failed" | "cancelled";
   attempts: number;
   nextRun: number;
   leaseUntil: number;

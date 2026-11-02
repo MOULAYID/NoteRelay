@@ -10,6 +10,7 @@ import {
 import { DEFAULT_SETTINGS, type Session } from "../src/domain/types";
 import {
   enqueueTranscription,
+  restartTranscription,
   claimJob,
   enqueueNotes,
   finishTranscript,
@@ -182,4 +183,20 @@ describe("persistent jobs", () => {
       "complete",
     );
   });
+});
+
+it("can switch a failed model through a new version without overwriting the earlier transcript", async () => {
+  await db.sessions.update("lecture", { totalSamples: 60, state: "stopped" });
+  await enqueueTranscription("lecture", DEFAULT_SETTINGS, true);
+  const first = (await db.jobs.toArray())[0];
+  await db.jobs.update(first.id, { status: "failed" });
+  await restartTranscription("lecture", {
+    ...DEFAULT_SETTINGS,
+    transcriptionModel: "replacement-model",
+  });
+  expect(await db.transcripts.count()).toBe(2);
+  expect((await db.jobs.get(first.id))?.status).toBe("cancelled");
+  const next = (await db.jobs.toArray()).find((j) => j.status === "pending")!;
+  expect(next.model).toBe("replacement-model");
+  expect(next.transcriptId).not.toBe(first.transcriptId);
 });

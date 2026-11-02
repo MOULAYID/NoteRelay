@@ -48,9 +48,9 @@ Capture: `starting → recording ↔ paused → stopped`, with `interrupted` and
 
 On new offscreen-engine initialization, previous nonterminal sessions become `interrupted`. The engine is pinged before a new session is created, preventing recovery from misclassifying that new session. A browser restart requires a fresh user action to capture; only saved data and pending processing recover automatically.
 
-Each job is pending, running, done, or failed. A transactional global lease prevents two engine iterations claiming work at the same time. A lease expires after two minutes; requests time out at 70 seconds. Retry network/429/5xx failures with jitter, up to four attempts. Invalid credentials, invalid schema, blocked/truncated responses, and unsupported models require explicit intervention. A retry after an ambiguous request may incur another provider charge; external exactly-once billing cannot be guaranteed.
+Each job is pending, running, done, failed, or explicitly cancelled by a new transcription. A transactional global lease prevents two engine iterations claiming work at the same time. A lease expires after two minutes; requests time out at 70 seconds. Retry network/429/5xx failures with jitter, up to four attempts. Invalid credentials, invalid schema, blocked/truncated responses, and unsupported models require explicit intervention. A retry after an ambiguous request may incur another provider charge; external exactly-once billing cannot be guaranteed.
 
-The queue is persisted. Existing transcription jobs pin the model/language for their transcript. Repeated transcription clicks reuse task IDs. Notes generation intentionally creates another output version.
+The queue is persisted. Existing transcription jobs pin the model/language for their transcript. Repeated transcription clicks reuse task IDs. Creating a new transcription version uses current model/language settings, cancels unfinished old transcription jobs, and preserves earlier transcripts and notes. Notes generation intentionally creates another output version.
 
 ## Decision 003: data model v1
 

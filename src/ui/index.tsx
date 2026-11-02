@@ -20,7 +20,12 @@ import {
   type Segment,
 } from "../domain/types";
 import { safeError } from "../domain/validation";
-import { enqueueTranscription, enqueueNotes, retryFailed } from "../jobs/queue";
+import {
+  enqueueTranscription,
+  restartTranscription,
+  enqueueNotes,
+  retryFailed,
+} from "../jobs/queue";
 import { wavHeader } from "../audio/pcm";
 import { testConnection } from "../providers/gemini";
 import "./style.css";
@@ -887,6 +892,34 @@ function App() {
               onClick={() => void perform(transcribe)}
             >
               Transcribe saved audio with Gemini
+            </button>
+          )}
+          {session && !session.audioDeleted && transcripts.length > 0 && (
+            <button
+              className="text-button"
+              disabled={busy || active}
+              onClick={() => {
+                if (
+                  confirm(
+                    "Create another transcription version? This sends the saved audio to Gemini again and may incur charges.",
+                  )
+                )
+                  void perform(async () => {
+                    if (!(await getKey()))
+                      throw new Error(
+                        "NR:Add your Gemini key in Settings first.",
+                      );
+                    await restartTranscription(session.id, await getSettings());
+                    setSelectedTranscript("");
+                    setEdit(null);
+                    await command({ type: "RUN_JOBS" });
+                    setMessage(
+                      "New transcription version queued using your current model and language settings.",
+                    );
+                  });
+              }}
+            >
+              Create new transcription version
             </button>
           )}
           {session && (

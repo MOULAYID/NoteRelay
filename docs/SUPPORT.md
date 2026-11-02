@@ -6,7 +6,7 @@
 - Microphone permission must be granted on the dedicated setup page. Offscreen documents cannot provide an ordinary visible permission workflow.
 - Closing the panel does not stop the offscreen engine. Closing Chrome stops capture; committed audio remains. Device/disk failure and uninstall are outside recovery guarantees.
 - Silence does not stop capture. Video pauses are recorded as silence; recording Pause excludes time. Input level is a rolling block RMS indicator, not a calibrated sound-level meter.
-- Gemini key and compatible model access are needed only for cloud processing. Recording works without a key or internet. Defaults may change availability; API connection and quality have to be tested with your own account.
+- Gemini key and compatible model access are needed only for cloud processing. Recording works without a key or internet. Defaults may change availability; API connection and quality have to be tested with your own account. After changing models, choose Create new transcription version to process retained audio with the new settings; ordinary retries preserve the original model.
 - Progressive transcription means 30-second requests, not true streaming; final text may lag. There are no interim speech hypotheses. Failed windows can retry; silence can yield no transcript text.
 - Generative ASR timestamps and video mapping are approximate. No measured accuracy guarantee is published.
 - Generic top-frame HTML5 video/audio observation is implemented. Normal YouTube HTML5 media may work but is not yet certified across ads, sign-in states, and player variants. Coursera/Udemy frame integrations are not verified. Original-source links are not backups of a course.
